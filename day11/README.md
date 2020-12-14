@@ -8,8 +8,8 @@ The input for this Advent of Code challenge consists of a grid of states, referr
 
 The goal is to look for a stable equilibrium of grid state (i.e. the grid stops changing) and report the number of `Occupied` seats at the equilibrium. The three heuristics for seat state changes between iterations are:
 
-- An `Empty` seat becomes `Occupied` if there are no adjacent `Occupied`.
-- An `Occupied` seat becomes `Empty` if there are **four or more** seats adjacent to it.
+- An `Empty` seat becomes `Occupied` if there are no adjacent `Occupied` seats.
+- An `Occupied` seat becomes `Empty` if there are **four or more** `Occupied` adjacent seats.
 - `Floor` never changes.
 
 A seat is considered adjacent to another seat if it is located at one of the eight positions immediately up, down, left, right, or diagonal from the other.
@@ -56,7 +56,7 @@ chunk 1   chunk 2
 
 ## Pre-processing time
 
-Since seats can only be in three states, we can note every 3x3 chunk to see what its center seat will be derived to. In total, that would be 3<sup>9</sup>, or 19,683 state chunks to derive. (There are 9 spaces with three potential states each.) We can serialize (turn into a string) all these state chunks and put them into a mapping from state chunk to its next center seat. Here's what serializing a state chunk could look like:
+Since seats can only be in three states, we can note every 3x3 chunk to see what its center seat will be derived to. In total, that would be 3<sup>9</sup>, or 19,683 state chunks to derive. (There are 9 spaces with 3 potential states each.) We can serialize (turn into a string) all these state chunks and put them into a mapping from state chunk to its next center seat. Here's what serializing a state chunk could look like:
 
 ```
 #.#
@@ -93,7 +93,7 @@ For example, given this state chunk,
 LL.#
 ```
 
-we can derive that the 2x2 center will be:
+we can derive that the next 2x2 center will be:
 
 ```
 L.
@@ -106,7 +106,7 @@ We can do this derivation for every possible 4x4 state chunk, and serialize them
 ###..L.#.LL#LL.# -> L.#L
 ```
 
-In total, the number of entries we would have would be 3<sup>16</sup>, or 43,046,721 entries; there are 3 possible states for 16 seats That's a lot! 
+In total, the number of entries we would have would be 3<sup>16</sup>, or 43,046,721 entries; there are 3 possible states for 16 seats. That's a lot! 
 
 ## Let me do you one better?? 3<sup>25</sup> = 847,288,609,443...!
 
@@ -124,7 +124,7 @@ We can use this line of Python to generate our table in the form of a CSV (comma
 $ python -c 'open("./state_chunk_map.csv", "w").write("\n".join(["{state},{derived_state}".format(state=state, derived_state="".join([(lambda state, pos: "." if state[pos] == "." else ("L" if 0 < len([1 for adj_pos in [pos-5, pos-4, pos-3, pos-1, pos+1, pos+3, pos+4, pos+5] if state[adj_pos] == "#"]) else "#") if state[pos] == "L" else ("L" if 4 <= len([1 for adj_pos in [pos-5, pos-4, pos-3, pos-1, pos+1, pos+3, pos+4, pos+5] if state[adj_pos] == "#"]) else "#"))(state, pos) for pos in [5, 6, 9, 10]])) for state in (lambda f: (lambda x: f(f, x)))(lambda gen_states, iter: [""] if iter == 0 else [state for list_of_states in [[char + next_char for next_char in gen_states(gen_states, iter - 1)] for char in ".L#"] for state in list_of_states])(16)]))'
 ```
 
-See [this file](state_chunk_map.csv) for the result. (Be warned - it's big, so if you're on mobile data, maybe don't.) (Also, a cool Where's Waldo type of thing: [Anonymous recursion is pretty cool](https://en.wikipedia.org/wiki/Anonymous_recursion).)
+See [this file](state_chunk_map.csv) for the result. (~~Be warned - it might take a lot of data to load~~ GitHub isn't letting me upload this even with git-lfs so... you can generate it if you want.) (Also, a cool Where's Waldo type of thing: [Anonymous recursion is pretty cool](https://en.wikipedia.org/wiki/Anonymous_recursion).)
 
 This will calculate all 43 million 4x4 state chunks, and their derived 2x2 state chunks, keeping in mind all the heuristics of the state changes. Locally, it takes me about 5.5 minutes to run, since it's generating about 1 GB worth of mappings and writing them to disk.
 
@@ -183,7 +183,7 @@ Here is the algorithm we'll be following:
 0.  (As a pre-processing step) Parse and load the mapping into a lookup table.
     
 
-1. Iterate through every 2x2 state chunk and serialize it with its adjacent neighbors and necessary added `Floor` to get a 4x4 state chunk.
+1. Iterate through every 2x2 state chunk and serialize it its adjacent neighbors and any additional `Floor` to get a 4x4 state chunk.
 2. Look up the serialized state chunk in the look up table and write the result to a new grid.
 3. Check to see if the new grid is the same as the old grid. 
     1. If so, repeat from step 1
@@ -193,7 +193,7 @@ And that's that! Oh, the joys of pre-processing. I love the idea of pre-processi
 
 ## Next Steps
 
-We can introduce some concurrency into this now. Since each 4x4 state chunk has enough information to calculate its derived 2x2 state chunk, we can start to delegate batches of calculations to threads that can run in parallel to each other. 
+We can introduce some parallelism into this now. Since each 4x4 state chunk has enough information to calculate its derived 2x2 state chunk, we can start to delegate batches of calculations to threads that can run in parallel to each other. 
 
 For example, we can split out the top half of the grid to one thread and the bottom half to another. Or maybe have each row of state chunks split into its own thread. Then once each of the threads is complete, they circle back to the main thread and update the new grid with the derived 2x2 state chunks. This might not see a performance benefit with a grid of 90 x 92 like we have in the input, but we'll see a massive performance gain in grids with thousands of rows and columns. 
 
