@@ -7,17 +7,17 @@ import (
 )
 
 func main() {
-	lines := strings.Split(Day10Input, "\n")
-	result := DayTenPartOne(lines)
+	lines := strings.Split(DayElevenInput, "\n")
+	result := DayElevenPartOne(lines)
 	fmt.Printf("11.1: %d\n", result)
 }
 
-func DayTenPartOne(input []string) (result uint16) {
+func DayElevenPartOne(input []string) (result uint16) {
 	result = states.FindOccupiedSpaces(input)
 	return
 }
 
-const Day10Input = `LLLLL.L.LLLLLLL.LL.LLLLL.LLLLLLL..LLLLL.LLLLL.L..LLLLL..LLLLLLLL.LLLL.LLL.LLLLLLL.LLLLLLLLLL
+const DayElevenInput = `LLLLL.L.LLLLLLL.LL.LLLLL.LLLLLLL..LLLLL.LLLLL.L..LLLLL..LLLLLLLL.LLLL.LLL.LLLLLLL.LLLLLLLLLL
 LLLLLLL.LLLLL..LLLLLLLLLLLLLLLLL.LLLLLLLLLLLLLLLLLLLLL.LLLLLL.LL.LLLLLLLLL.LLLLLL.LLLLLLLLLL
 LLLL.LLLLLLLL.LLLLLLLLL.LLLLLLLL.LLLLLLLLLLLLLLL.LLLLL.LLLLLLLLL.LLLLLLLLL.LLLLLL.LLLL.LLLLL
 LLLLLL.LLLLLLLLLLLLLLLL.LLLLLL.LLLLLLLL.L.LLL.LLLLLLLL.LLLLLL.LLLLLLLLLLLL.LLLLLL.LLLL.LLLLL
