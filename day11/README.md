@@ -121,12 +121,12 @@ In any case, we'll just stick with the 4x4 state chunks without compression for 
 We can use this line of Python to generate our table in the form of a CSV (comma-separated values): 
 
 ```bash
-$ python -c 'open("./state_chunk_map.csv", "w").write("\n".join(["{state},{derived_state}".format(state=state, derived_state="".join([(lambda state, pos: "." if state[pos] == "." else ("L" if 0 < len([1 for adj_pos in [pos-5, pos-4, pos-3, pos-1, pos+1, pos+3, pos+4, pos+5] if state[adj_pos] == "#"]) else "#") if state[pos] == "L" else ("L" if 4 <= len([1 for adj_pos in [pos-5, pos-4, pos-3, pos-1, pos+1, pos+3, pos+4, pos+5] if state[adj_pos] == "#"]) else "#"))(state, pos) for pos in [5, 6, 9, 10]])) for state in (lambda f: (lambda x: f(f, x)))(lambda g, iter: [""] if iter == 0 else [state for list_of_states in [[c + n for n in g(g, iter - 1)] for c in ".L#"] for state in list_of_states])(16)]))'
+$ python -c 'open("./state_chunk_map.csv", "w").write("\n".join(["{state},{derived_state}".format(state=state, derived_state="".join([(lambda state, pos: "." if state[pos] == "." else ("L" if 0 < len([1 for adj_pos in [pos-5, pos-4, pos-3, pos-1, pos+1, pos+3, pos+4, pos+5] if state[adj_pos] == "#"]) else "#") if state[pos] == "L" else ("L" if 4 <= len([1 for adj_pos in [pos-5, pos-4, pos-3, pos-1, pos+1, pos+3, pos+4, pos+5] if state[adj_pos] == "#"]) else "#"))(state, pos) for pos in [5, 6, 9, 10]])) for state in (lambda f: (lambda x: f(f, x)))(lambda gen_states, iter: [""] if iter == 0 else [state for list_of_states in [[char + next_char for next_char in gen_states(gen_states, iter - 1)] for char in ".L#"] for state in list_of_states])(16)]))'
 ```
 
 See [this file](state_chunk_map.csv) for the result. (Be warned - it's big, so if you're on mobile data, maybe don't.) (Also, a cool Where's Waldo type of thing: [Anonymous recursion is pretty cool](https://en.wikipedia.org/wiki/Anonymous_recursion).)
 
-This will calculate all the possible 4x4 state chunks, and their derived 2x2 state chunks, keeping in mind all the heuristics of the state changes. Locally, it takes me about 5.5 minutes to run, since it's generating about 1 GB worth of mappings and writing them to disk.
+This will calculate all 43 million 4x4 state chunks, and their derived 2x2 state chunks, keeping in mind all the heuristics of the state changes. Locally, it takes me about 5.5 minutes to run, since it's generating about 1 GB worth of mappings and writing them to disk.
 
 The top of our CSV will end up looking like this: 
 
