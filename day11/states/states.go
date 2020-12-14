@@ -59,6 +59,7 @@ func (dsc derivedStateChunk) String() string {
 	return builder.String()
 }
 
+// Not String() because String() is relied on for the look up table
 func (ssc serializedStateChunk) PrettyPrint() string {
 	var builder strings.Builder
 	builder.WriteString("\n")

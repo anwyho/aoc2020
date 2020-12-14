@@ -9,7 +9,7 @@ import (
 )
 
 const stateChunkMapFileName = "./day11/state_chunk_map.csv"
-const pythonSrcToGenerateLookUpMap = `generate_states = lambda iter: [''] if iter == 0 else [state for list_of_states in [[c + n for n in generate_states(iter - 1)] for c in ('.', 'L', '#')] for state in list_of_states]; open('/Users/alo/go/src/aoc/state_chunk_map_2.csv', 'w').write('\n'.join(["{state},{derived_state}".format(state=state, derived_state=''.join([(lambda state, pos: '.' if state[pos] == '.' else ('L' if 0 < len([1 for adj_pos in [pos-5, pos-4, pos-3, pos-1, pos+1, pos+3, pos+4, pos+5] if state[adj_pos] == '#']) else '#') if state[pos] == 'L' else ('L' if 4 <= len([1 for adj_pos in [pos-5, pos-4, pos-3, pos-1, pos+1, pos+3, pos+4, pos+5] if state[adj_pos] == '#']) else '#'))(state, pos) for pos in [5, 6, 9, 10]])) for state in generate_states(iter=16)]))`
+const pythonSrcToGenerateLookUpMap = `open("./state_chunk_map.csv", "w").write("\n".join(["{state},{derived_state}".format(state=state, derived_state="".join([(lambda state, pos: "." if state[pos] == "." else ("L" if 0 < len([1 for adj_pos in [pos-5, pos-4, pos-3, pos-1, pos+1, pos+3, pos+4, pos+5] if state[adj_pos] == "#"]) else "#") if state[pos] == "L" else ("L" if 4 <= len([1 for adj_pos in [pos-5, pos-4, pos-3, pos-1, pos+1, pos+3, pos+4, pos+5] if state[adj_pos] == "#"]) else "#"))(state, pos) for pos in [5, 6, 9, 10]])) for state in (lambda f: (lambda x: f(f, x)))(lambda gen_states, iter: [""] if iter == 0 else [state for list_of_states in [[char + next_char for next_char in gen_states(gen_states, iter - 1)] for char in ".L#"] for state in list_of_states])(2)]))`
 // Each state chunk is 16 states, with 3 kinds of states
 var numPossibleStateChunks int = int(math.Pow(3, 16))                  // 43,046,721
 var derivedStateChunkLookUp map[serializedStateChunk]derivedStateChunk // = GetDerivedStateChunkLookUpMap()
@@ -50,7 +50,7 @@ func loadDerivedStateChunkLookUpMap() {
 		derivedStateChunk := parseDerivedStateChunk(entryList[1])
 		derivedStateChunkLookUp[stateChunk] = derivedStateChunk
 
-		if (entryIx+1)%10_000_000 == 0 {
+		if (entryIx+1) % 10_000_000 == 0 {
 			fmt.Printf("  loaded %d million entries\n", (entryIx+1)/1_000_000)
 		}
 	}
