@@ -1,3 +1,5 @@
+This is one of the Advent of Code 2020 solutions that I'm most proud of. I loved working through this problem, discovering new optimizations, and ultimately, explaining it all in an understandable way. 
+
 # Day 11 Write-Up
 
 The prompt for this challenge can be found at [Advent of Code Day 11](https://adventofcode.com/2020/day/11).
