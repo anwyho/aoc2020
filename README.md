@@ -22,10 +22,10 @@ LLLLLLLLLL
 L.LLLLLL.L
 L.LLLLL.LL
 
-Fig. 1 - Example
+Fig. 1 - Example starting grid
 ```
 
-The goal is to look for a stable equilibrium of grid state (i.e. the grid stops changing) and report the number of `Occupied` seats at the equilibrium. (Think of [Conway's Game of Life](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life). The three heuristics for seat state changes between iterations are:
+The goal is to look for a stable equilibrium of grid state (i.e. the grid stops changing) and report the number of `Occupied` seats at the equilibrium. (Think of [Conway's Game of Life](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life)). The three heuristics for seat state changes between iterations are:
 
 - An `Empty` seat becomes `Occupied` if there are no adjacent `Occupied` seats.
 - An `Occupied` seat becomes `Empty` if there are **four or more** `Occupied` adjacent seats.
@@ -64,7 +64,7 @@ This means that we can iterate through every seat in a grid, take its adjacent s
 
 For seats on the edges, we can add missing adjacent seats as `Floor` since `Floor` doesn't affect what the next state of a seat will be. 
 
-So a seat on the bottom right corner of the grid can be represented as so: (with the seat being the center of the chunk)
+So a seat on the bottom right corner of the grid can be represented as so: (with the `Empty` seat at the bottom right corner of the grid in the center of the chunk)
 
 ```
 ##?    ##.
@@ -86,7 +86,7 @@ Fig. 4 - Filling in edges
 
 ## Pre-processing time
 
-Since seats can only be in three states, we can note every 3x3 chunk to see what its center seat will be derived to. In total, that would be 3<sup>9</sup>, or 19,683 state chunks to derive. (There are 9 spaces with 3 potential states each.) We can serialize (turn into a string) all these state chunks and put them into a mapping from state chunk to its next center seat. Here's what serializing a state chunk could look like:
+Since seats can only be in three states and are completely dependent on their adjacent seats, we can note every 3x3 chunk to see what its center seat will be derived to. In total, if we wanted to derive every possible state chunk, that would be 3<sup>9</sup>, or 19,683 state chunks to derive. (There are 9 spaces with 3 potential states each.) We can serialize (turn into a string) all these state chunks and put them into a mapping from state chunk to its next center seat. Here's what serializing a state chunk could look like:
 
 ```
 #.#
@@ -98,7 +98,7 @@ Fig. 5 - Serializing a 3x3 chunk
 
 We're just listing out every seat from left-to-right then top-to-bottom.
 
-If we made a dictionary of these mappings, the entry would look like the middle one, since `#.###LL.#` would mean the center seat would turn into `L`:
+If we made a lookup table of these mappings, the entry would look like the middle one, since `#.###LL.#` would mean the center seat would turn into `L`:
 
 ```
 ...
@@ -130,14 +130,14 @@ The algorithm for finding the next state of a grid would then require iterating 
 
 ## Let me do you one better. 3<sup>16</sup> = 43,046,721
 
-Rather than deriving all the possible 3x3 state chunks, why not do all the possible 4x4 state chunks? The principle is still the same - if we can split the grid into state chunks of 2x2 states and then get the surrounding adjacent seats, we can derive the next state of every 2x2 state chunk just by looking it up in a mapping. 
+Rather than deriving all the possible 3x3 state chunks, why not do all the possible 4x4 state chunks? The principle is still the same - if we can split the grid into state chunks of 2x2 states and then get the chunk's surrounding adjacent seats, we can derive the next state of every 2x2 state chunk just by looking it up in a mapping. 
 
 For example, given this state chunk, 
 
 ```
 ###.
-.L.#
-.LL#
+.L.# (focus on this:) L.
+.LL#                  LL
 LL.#
 
 Fig. 8 - 4x4 chunk
@@ -178,7 +178,7 @@ We can use this line of Python to generate our table in the form of a CSV (comma
 $ python -c 'open("./state_chunk_map.csv", "w").write("\n".join(["{state},{derived_state}".format(state=state, derived_state="".join([(lambda state, pos: "." if state[pos] == "." else ("L" if 0 < len([1 for adj_pos in [pos-5, pos-4, pos-3, pos-1, pos+1, pos+3, pos+4, pos+5] if state[adj_pos] == "#"]) else "#") if state[pos] == "L" else ("L" if 4 <= len([1 for adj_pos in [pos-5, pos-4, pos-3, pos-1, pos+1, pos+3, pos+4, pos+5] if state[adj_pos] == "#"]) else "#"))(state, pos) for pos in [5, 6, 9, 10]])) for state in (lambda f: (lambda x: f(f, x)))(lambda gen_states, iter: [""] if iter == 0 else [state for list_of_states in [[char + next_char for next_char in gen_states(gen_states, iter - 1)] for char in ".L#"] for state in list_of_states])(16)]))'
 ```
 
-See [this file](state_chunk_map.csv) for the result. (~~Be warned - it might take a lot of data to load~~ GitHub isn't letting me upload this even with git-lfs so... you can generate it if you want.) (Also, a cool Where's Waldo type of thing: [Anonymous recursion is pretty cool](https://en.wikipedia.org/wiki/Anonymous_recursion).)
+See [this file](state_chunk_map.csv) for the result. (~~Be warned - it might take a lot of data to load~~ GitHub isn't letting me upload this even with `git-lfs` so... you can generate it if you want.) (Also, a cool Where's Waldo type of thing: [Anonymous recursion is pretty cool](https://en.wikipedia.org/wiki/Anonymous_recursion).)
 
 This will calculate all 43 million 4x4 state chunks, and their derived 2x2 state chunks, keeping in mind all the heuristics of the state changes. Locally, it takes me about 5.5 minutes to run, since it's generating about 1 GB worth of mappings and writing them to disk.
 
@@ -243,7 +243,6 @@ The file ends up being about 1 GB, but now our program will be a matter of doing
 Here is the algorithm we'll be following: 
 
 0.  (As a pre-processing step) Parse and load the mapping into a lookup table.
-    
 
 1. Iterate through every 2x2 state chunk and serialize it its adjacent neighbors and any additional `Floor` to get a 4x4 state chunk.
 2. Look up the serialized state chunk in the look up table and write the result to a new grid.
