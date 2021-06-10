@@ -1,4 +1,5 @@
-This is one of the Advent of Code 2020 solutions that I'm most proud of. I loved working through this problem, discovering new optimizations, and ultimately, explaining it all in an understandable way. 
+This is one of the Advent of Code 2020 solutions that I'm most proud of. I loved working through this problem, discovering new optimizations, and explaining it as clearly as I can. 
+
 
 # Day 11 Write-Up
 
@@ -8,7 +9,23 @@ The prompt for this challenge can be found at [Advent of Code Day 11](https://ad
 
 The input for this Advent of Code challenge consists of a grid of states, referring to whether or not a space is a `Floor` (or `.`), an `Empty` seat (or `L`), or an `Occupied` seat (or `#`). 
 
-The goal is to look for a stable equilibrium of grid state (i.e. the grid stops changing) and report the number of `Occupied` seats at the equilibrium. The three heuristics for seat state changes between iterations are:
+An example grid: 
+```
+L.LL.LL.LL
+LLLLLLL.LL
+L.L.L..L..
+LLLL.LL.LL
+L.LL.LL.LL
+L.LLLLL.LL
+..L.L.....
+LLLLLLLLLL
+L.LLLLLL.L
+L.LLLLL.LL
+
+Fig. 1 - Example
+```
+
+The goal is to look for a stable equilibrium of grid state (i.e. the grid stops changing) and report the number of `Occupied` seats at the equilibrium. (Think of [Conway's Game of Life](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life). The three heuristics for seat state changes between iterations are:
 
 - An `Empty` seat becomes `Occupied` if there are no adjacent `Occupied` seats.
 - An `Occupied` seat becomes `Empty` if there are **four or more** `Occupied` adjacent seats.
@@ -18,9 +35,8 @@ A seat is considered adjacent to another seat if it is located at one of the eig
 
 The goal is to keep finding the next state of the grid until the grid stops changing. Then once the grid stops changing, we count how many `Occupied` seats there are.
 
-# Approach
 
-## Gotta go fast
+# Approach
 
 The challenge description mentioned that:
 
@@ -36,6 +52,8 @@ For example, given the following chunk,
 #.#
 ##L
 L.#
+
+Fig. 2 - 3x3 chunk
 ```
 
 we can derive that the center seat, currently `Occupied` (`#`), will become `Empty` (`L`) in the next state since there are four `Occupied` seats adjacent to it.  
@@ -46,14 +64,24 @@ This means that we can iterate through every seat in a grid, take its adjacent s
 
 For seats on the edges, we can add missing adjacent seats as `Floor` since `Floor` doesn't affect what the next state of a seat will be. 
 
-For example, the two `Empty` seats in chunk 1 and chunk 2 would be derived to the same states. (Unknown state is denoted as `?`.)
+So a seat on the bottom right corner of the grid can be represented as so: (with the seat being the center of the chunk)
 
 ```
-  L??       ...
-  ???       .L?
-  ???       .??
-  
-chunk 1   chunk 2
+##?    ##.
+.L? -> .L.
+???    ...
+
+Fig. 3 - Filling in corners
+```
+
+And a seat along the right side of the grid can be represented as:
+
+```
+#.?    #..
+.L? -> .L.
+##?    ##.
+
+Fig. 4 - Filling in edges
 ```
 
 ## Pre-processing time
@@ -64,6 +92,8 @@ Since seats can only be in three states, we can note every 3x3 chunk to see what
 #.#
 ##L -> #.###LL.#
 L.#
+
+Fig. 5 - Serializing a 3x3 chunk
 ```
 
 We're just listing out every seat from left-to-right then top-to-bottom.
@@ -78,7 +108,23 @@ If we made a dictionary of these mappings, the entry would look like the middle 
 
 #.###LLL. -> #
 ...
+
+Fig. 6 - Mapping a serialized 3x3 chunk to its next state
 ```
+
+So whenever we see a chunk that looks like this...
+
+```
+?????
+?#.#?
+?##L?
+?L.#?
+?????
+
+Fig. 7 - Fig. 5 in context
+```
+
+...we know that the center seat will derive to an `Empty`. 
 
 The algorithm for finding the next state of a grid would then require iterating through every seat, finding its adjacent seats, serializing the chunk of seats, and then lookup up the seat in the mapping. Hm... That doesn't seem very much faster than the original brute force approach since we still have to grab all of a seat's adjacent seats. What could we improve? 
 
@@ -93,6 +139,8 @@ For example, given this state chunk,
 .L.#
 .LL#
 LL.#
+
+Fig. 8 - 4x4 chunk
 ```
 
 we can derive that the next 2x2 center will be:
@@ -100,12 +148,16 @@ we can derive that the next 2x2 center will be:
 ```
 L.
 #L
+
+Fig. 9 - Derived state chunk from the center of Fig. 8
 ```
 
 We can do this derivation for every possible 4x4 state chunk, and serialize them into a mapping. The entry might look like:
 
 ```
 ###..L.#.LL#LL.# -> L.#L
+
+Fig. 10 - Mapping a serialized 3x3 chunk to its next state
 ```
 
 In total, the number of entries we would have would be 3<sup>16</sup>, or 43,046,721 entries; there are 3 possible states for 16 seats. That's a lot! 
@@ -145,6 +197,8 @@ The top of our CSV will end up looking like this:
 .............L..,....
 
 ...
+
+Fig. 11 - `cat state_chunk_map.csv | head -10`
 ```
 
 This is denoting the serialized state chunk to its serialized derived state chunks (separated by the comma). We're starting by generating all the state chunks that look like, 
@@ -154,6 +208,8 @@ This is denoting the serialized state chunk to its serialized derived state chun
 .... .... .... .... .... .... .... .... .... ....
 .... .... .... .... .... .... .... .... .... ....
 .... ...L ...# ..L. ..LL ..L# ..#. ..#L ..## .L.. ...
+
+Fig. 12 - State chunks represented in Fig. 11
 ```
 
 and for these first few entries, they all map to `....` since the center of the state chunks are all `Floor` and `Floor` does not change. 
@@ -166,14 +222,18 @@ Later on, we get entries that look more like this, which will probably be used a
 #.L#L#..L###..LL,#.##
 #.L#L#..L###..L#,#.#L
 #.L#L#..L###..#.,#.#L
-#.L#L#..L###..#L,#.#L                          #.L#
+#.L#L#..L###..#L,#.#L
+                                               #.L#
 #.L#L#..L###..##,#.#L <- this line represents: L#.. -> #.
-#.L#L#..L###.L..,#.##                          L###    #L
-#.L#L#..L###.L.L,#.##                          ..##
+                                               L###    #L
+#.L#L#..L###.L..,#.##                          ..##
+#.L#L#..L###.L.L,#.##
 #.L#L#..L###.L.#,#.#L
 #.L#L#..L###.LL.,#.##
 
 ...
+
+Fig. 13 - Serialized 4x4 chunk to its representation and derived state chunk
 ```
 
 The file ends up being about 1 GB, but now our program will be a matter of doing some mapping lookups rather than having to calculate every seat's adjacent seat states. Much faster! (One in-memory lookup for four seats rather than 9 lookups per seat, or 36 lookups for the equivalent four seats.)
