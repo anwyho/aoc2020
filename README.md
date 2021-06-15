@@ -247,7 +247,7 @@ Here is the algorithm we'll be following:
 1. Iterate through every 2x2 state chunk and serialize it its adjacent neighbors and any additional `Floor` to get a 4x4 state chunk.
 2. Look up the serialized state chunk in the look up table and write the result to a new grid.
 3. Check to see if the new grid is the same as the old grid. 
-    1. If so, repeat from step 1
+    1. If not, repeat from step 1
 4. Count how many `Occupied` seats there are. 
 
 And that's that! Oh, the joys of pre-processing. I love the idea of pre-processing because we're doing all the work beforehand. It's like driving a car with a 10 gallon tank as opposed to the same car with a 2 gallon tank. Sure, the fill-up time takes longer, but once we're on our way, there's no stopping us! 
